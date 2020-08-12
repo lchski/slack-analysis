@@ -27,6 +27,7 @@ load_message_file <- function(file_path_to_load) {
 }
   
 messages <- fs::dir_ls(conversation_file_prefix, glob = "*.json", recurse = TRUE, type = "file") %>%
+  .[! . %in% paste0(conversation_file_prefix, c("users.json", "channels.json", "integration_logs.json"))] %>% ## filter out the top-level non-message files
   map_dfr(load_message_file, .id = "source_file_path") %>%
   mutate(conversation = str_remove(source_file_path, conversation_file_prefix)) %>%
   separate(conversation, into = c("conversation", "conversation_date"), "/") %>%
@@ -38,5 +39,5 @@ messages <- fs::dir_ls(conversation_file_prefix, glob = "*.json", recurse = TRUE
   mutate(is_thread_reply = ! is.na(thread_ts) & ! is_thread_start)
 
 msgs <- messages %>%
-  select(conversation, root_msg_ts, ts, datetime, type, subtype, user, text, is_thread_start, is_thread_reply) %>%
+  select(conversation, root_msg_ts, ts, datetime, type, subtype, user, text, is_thread_start, is_thread_reply, reply_count) %>%
   left_join(users %>% select(user = id, name, real_name))
