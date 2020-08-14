@@ -3,6 +3,7 @@ library(jsonlite)
 library(janitor)
 library(lubridate)
 
+#devtools::install_github("lchski/r-helpers")
 library(helpers)
 
 users <- read_json("data/source/export/users.json", simplifyVector = TRUE, flatten = TRUE) %>%
