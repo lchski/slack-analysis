@@ -29,6 +29,7 @@ en_msgs %>%
     image_urls_text,
     image_urls_html,
     is_thread_start,
-    is_thread_reply
+    is_thread_reply, 
+    root_msg_ts
   ) %>%
   write_csv("data/out/en-msgs.csv")
