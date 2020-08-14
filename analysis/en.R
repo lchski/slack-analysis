@@ -1,7 +1,7 @@
 en_channels <- msgs %>%
   select(conversation) %>%
   distinct() %>%
-  filter(str_detect(conversation, "exposure|$en-|-en-")) %>%
+  filter(str_detect(conversation, "exposure|$en-|-en-|exp")) %>%
   pull(conversation)
 
 en_messages <- messages %>%
