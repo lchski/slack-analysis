@@ -38,35 +38,32 @@ messages <- fs::dir_ls(conversation_file_prefix, glob = "*.json", recurse = TRUE
   mutate(datetime = as_datetime(as.integer(ts))) %>%
   mutate(root_msg_ts = ifelse(is.na(thread_ts), ts, thread_ts)) %>%
   mutate(is_thread_start = ! is.na(reply_count)) %>%
-  mutate(is_thread_reply = ! is.na(thread_ts) & ! is_thread_start) %>%
-  mutate(text = str_replace_all(text, user_ids_real_names)) %>%
-  left_join(user_use_names)
+  mutate(is_thread_reply = ! is.na(thread_ts) & ! is_thread_start)
 
-user_ids_real_names <- users %>%
-  select(id, use_name) %>%
+user_use_names <- messages %>%
+  select(id = user, user_profile) %>%
+  unnest(c(user_profile)) %>%
+  select(id, user_profile_real_name, user_profile_display_name, user_profile_name) %>%
+  filter(! (is.na(user_profile_real_name) & is.na(user_profile_display_name) & is.na(user_profile_name))) %>%
+  distinct() %>%
+  select(id, user_use_name = user_profile_real_name) %>%
+  bind_rows(users %>%
+              select(id, user_use_name = use_name)) %>%
+  distinct() %>%
+  group_by(id) %>%
+  top_n(-1) %>%
+  ungroup()
+
+user_ids_real_names <- user_use_names %>%
   mutate(id = paste0("<@", id, ">")) %>%
-  mutate(use_name = paste0("<@", use_name, ">")) %>%
+  mutate(user_use_name = paste0("<@", user_use_name, ">")) %>%
   deframe()
 
-#user_use_names <-
-  
-users %>%
-  select(user = id, user_name = name, user_real_name = real_name, user_use_name = use_name)
-
-messages %>%
-  select(user, user_profile) %>%
-  unnest(c(user_profile)) %>%
-  select(user, user_profile_real_name, user_profile_display_name, user_profile_name) %>%
-  filter(! (is.na(user_profile_real_name) & is.na(user_profile_display_name) & is.na(user_profile_name))) %>%
-  distinct()
-  hoist(user_profile, user_profile_real_name = "user_profile_real_name", .remove = FALSE) %>%
-  select(user, user_use_name, user_profile_real_name)
-
+## replace @mentions with @Name (based on `user_use_name`)
+## also add `user_use_name` column for whoever sent each message
 messages <- messages %>%
   mutate(text = str_replace_all(text, user_ids_real_names)) %>%
-  left_join(user_use_names)
-
-
+  left_join(user_use_names %>% select(user = id, user_use_name))
 
 image_urls <- messages %>%
   select(conversation, ts, files) %>%
