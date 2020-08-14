@@ -28,12 +28,6 @@ load_message_file <- function(file_path_to_load) {
     )
 }
 
-user_ids_real_names <- users %>%
-  select(id, use_name) %>%
-  mutate(id = paste0("<@", id, ">")) %>%
-  mutate(use_name = paste0("<@", use_name, ">")) %>%
-  deframe()
-
 messages <- fs::dir_ls(conversation_file_prefix, glob = "*.json", recurse = TRUE, type = "file") %>%
   .[! . %in% paste0(conversation_file_prefix, c("users.json", "channels.json", "integration_logs.json"))] %>% ## filter out the top-level non-message files
   map_dfr(load_message_file, .id = "source_file_path") %>%
@@ -46,7 +40,33 @@ messages <- fs::dir_ls(conversation_file_prefix, glob = "*.json", recurse = TRUE
   mutate(is_thread_start = ! is.na(reply_count)) %>%
   mutate(is_thread_reply = ! is.na(thread_ts) & ! is_thread_start) %>%
   mutate(text = str_replace_all(text, user_ids_real_names)) %>%
-  left_join(users %>% select(user = id, user_name = name, user_real_name = real_name, user_use_name = use_name))
+  left_join(user_use_names)
+
+user_ids_real_names <- users %>%
+  select(id, use_name) %>%
+  mutate(id = paste0("<@", id, ">")) %>%
+  mutate(use_name = paste0("<@", use_name, ">")) %>%
+  deframe()
+
+#user_use_names <-
+  
+users %>%
+  select(user = id, user_name = name, user_real_name = real_name, user_use_name = use_name)
+
+messages %>%
+  select(user, user_profile) %>%
+  unnest(c(user_profile)) %>%
+  select(user, user_profile_real_name, user_profile_display_name, user_profile_name) %>%
+  filter(! (is.na(user_profile_real_name) & is.na(user_profile_display_name) & is.na(user_profile_name))) %>%
+  distinct()
+  hoist(user_profile, user_profile_real_name = "user_profile_real_name", .remove = FALSE) %>%
+  select(user, user_use_name, user_profile_real_name)
+
+messages <- messages %>%
+  mutate(text = str_replace_all(text, user_ids_real_names)) %>%
+  left_join(user_use_names)
+
+
 
 image_urls <- messages %>%
   select(conversation, ts, files) %>%
