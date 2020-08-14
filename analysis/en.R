@@ -24,7 +24,20 @@ image_urls <- messages %>%
   select(conversation, ts, mimetype, url_private) %>%
   filter(str_detect(mimetype, "image")) %>%
   select(-mimetype) %>%
+  mutate(url_private_html = str_glue('<img src="{url_private}">')) %>%
   group_by(conversation, ts) %>%
-  nest(image_urls = c(url_private)) %>%
-  mutate(image_urls = map_chr(image_urls, ~ pull(.) %>% paste0(collapse = "\n\n")))
-  
+  nest(image_urls = c(url_private, url_private_html)) %>%
+  mutate(
+    image_urls_text = map_chr(
+      image_urls,
+      ~ (.) %>% pull(url_private) %>% paste0(collapse = "\n\n")
+    ),
+    image_urls_html = map_chr(
+      image_urls,
+      ~ (.) %>% pull(url_private_html) %>% paste0(collapse = "\n\n")
+    )
+  ) %>%
+  select(-image_urls)
+
+
+
