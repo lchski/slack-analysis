@@ -47,6 +47,45 @@ messages <- fs::dir_ls(conversation_file_prefix, glob = "*.json", recurse = TRUE
   mutate(text = str_replace_all(text, user_ids_real_names)) %>%
   left_join(users %>% select(user = id, user_name = name, user_real_name = real_name, user_use_name = use_name))
 
+image_urls <- messages %>%
+  select(conversation, ts, files) %>%
+  unnest(c(files)) %>%
+  select(conversation, ts, mimetype, url_private) %>%
+  filter(str_detect(mimetype, "image")) %>%
+  select(-mimetype) %>%
+  mutate(url_private_html = str_glue('<img src="{url_private}">')) %>%
+  group_by(conversation, ts) %>%
+  nest(image_urls = c(url_private, url_private_html)) %>%
+  mutate(
+    image_urls_text = map_chr(
+      image_urls,
+      ~ (.) %>% pull(url_private) %>% paste0(collapse = "\n\n")
+    ),
+    image_urls_html = map_chr(
+      image_urls,
+      ~ (.) %>% pull(url_private_html) %>% paste0(collapse = "\n\n")
+    )
+  ) %>%
+  select(-image_urls)
+
+messages <- messages %>%
+  left_join(image_urls)
+
 msgs <- messages %>%
-  select(conversation, root_msg_ts, ts, datetime, type, subtype, user, user_use_name, text, is_thread_start, is_thread_reply, reply_count)
+  select(
+    conversation,
+    root_msg_ts,
+    ts,
+    datetime,
+    type,
+    subtype,
+    user,
+    user_use_name,
+    text,
+    is_thread_start,
+    is_thread_reply,
+    reply_count,
+    image_urls_text,
+    image_urls_html
+  )
   
