@@ -62,6 +62,8 @@ You can use “Command-Enter” as a keyboard shortcut to run each section. Some
 
 After each section has run successfully, the messages will have been loaded into the R environment.
 
+_(You can also enter `source("load.R")` in the Console to run the whole load script, instead of doing it section by section. If there are errors, though, they can be easier to debug when running it section by section.)
+
 ### 4. Export a CSV file of relevant channels
 
 Open `analysis/en.R` and update the filter for which channel (“conversation”) to include the channels you want in the CSV export ([line 4](https://github.com/lchski/slack-analysis/blob/master/analysis/en.R#L4)). You can use `|` to include multiple channels; partial matches on channel name work.
